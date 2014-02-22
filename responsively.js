@@ -2,7 +2,7 @@
  * @license
  * responsively.js
  * Copyright 2014 Mark Bradley, Ted Halmrast
- * Available under MIT license <http://responsivelyjs.com/license>
+ * Available under MIT license <http://responsivelyjs.org/license>
  */
 ;(function(window) {
 
