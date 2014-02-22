@@ -17,7 +17,7 @@
   function responsively( opts ) {
 
     var p         = $( result( opts, 'parent' ) ),
-        levels    = result( opts, 'levels' ),
+        rules     = result( opts, 'rules' ),
         constrain = result( opts, 'constrain' ),
         cel, // cel = Constrained ELement
         tHeight   = result( opts, 'height' );
@@ -52,7 +52,7 @@
 
         for (;;) {
 
-          T.spam( 'processing level ' + r.level + " cel.height:" + cel.height() + " tHeight:" + tHeight );
+          console.log( 'processing level ' + r.level + " cel.height:" + cel.height() + " tHeight:" + tHeight );
 
           if ( r.level && // always process level 0
                cel.height() <= tHeight )
@@ -60,8 +60,8 @@
 
           var found = false;
 
-          for ( var li=0; li<levels.length; li++ ) {
-            var l      = levels[ li ],
+          for ( var li=0; li<rules.length; li++ ) {
+            var l      = rules[ li ],
                 a      = p.find( result( l, 'a' ) ),
                 tlevel = result( l, 'level' ) || 0;
 
@@ -99,7 +99,7 @@
           if ( !found && tlevel )
             break;
 
-          T.spam( 'cel.height:' + cel.height() + ' target height:' + tHeight + ' found:' + found );
+          console.log( 'cel.height:' + cel.height() + ' target height:' + tHeight + ' found:' + found );
         }
 
         cel.css( 'visibility', 'visible' );
