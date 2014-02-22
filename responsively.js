@@ -42,7 +42,7 @@
         if ( !tHeight )
           tHeight = cel.height();
 
-        console.log( 'est width:' + width + ' target height:' + tHeight );
+        //console.log( 'est width:' + width + ' target height:' + tHeight );
 
         this.update();
       },
@@ -52,7 +52,7 @@
 
         for (;;) {
 
-          console.log( 'processing level ' + r.level + " cel.height:" + cel.height() + " tHeight:" + tHeight );
+          //console.log( 'processing level ' + r.level + " cel.height:" + cel.height() + " tHeight:" + tHeight );
 
           if ( r.level && // always process level 0
                cel.height() <= tHeight )
@@ -99,7 +99,7 @@
           if ( !found && tlevel )
             break;
 
-          console.log( 'cel.height:' + cel.height() + ' target height:' + tHeight + ' found:' + found );
+          //console.log( 'cel.height:' + cel.height() + ' target height:' + tHeight + ' found:' + found );
         }
 
         cel.css( 'visibility', 'visible' );
