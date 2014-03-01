@@ -90,6 +90,18 @@
                   a.remove();
               }
 
+              var css = result( l, 'css' );
+              if ( css )
+                a.css( css );
+
+              var addClass = result( l, 'addClass' );
+              if ( addClass )
+                a.addClass( addClass );
+
+              var removeClass = result( l, 'removeClass' );
+              if ( removeClass )
+                a.removeClass( removeClass );
+
               found = true;
             }
           }
