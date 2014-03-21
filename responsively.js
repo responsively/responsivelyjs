@@ -6,21 +6,136 @@
  */
 ;(function(window) {
 
+  /*
+
+     /.  lite menu
+
+     /.  genericize the menu classes/options so it isn't limited to bootstrap menus
+
+     /.  document menu options
+
+     /.  render the overflow dropdown only once, at the end
+
+   */
+
   function result(object, property) {
     if (object == null)
       return void 0;
 
     var value = object[property];
     return typeof value === 'function' ? value.call( object ) : value;
-  };
+  }
+
+  // IE8ism
+  function trim( s ) {
+    return s.replace(/^\s+|\s+$/g, ''); 
+  }
+
+  function linkRenderer( m, opts ) {
+
+    var html = '';
+
+    var classes = '';
+
+    if ( opts.submenu )
+      classes += ' dropdown-toggle';
+
+    html += '<a';
+    var mhref = result( m, 'href' );
+
+    if ( mhref )
+      html += ' href="' + mhref + '"';
+
+    var mtarget = result( m, 'target' );
+    if ( mtarget )
+      html += ' target="' + mtarget + '"';
+
+    var mclasses = result( m, 'classes' );
+    if ( mclasses )
+      classes += ' ' + mclasses;
+
+    if ( classes )
+      html += ' class="' + trim( classes ) + '"';
+
+    var mstyle = result( m, 'style' );
+    if ( mstyle )
+      html += ' style="' + mstyle + '"';
+
+    if ( opts.submenu )
+      html += ' data-toggle="dropdown"';
+
+    html += '>';
+
+    var micon = result( m, 'icon' );
+    if ( micon ) {
+      if ( micon[0] === '<' )
+        html += micon;
+      else
+        html += '<i class="' + micon + '"/> ';
+    }
+
+    if ( !m.icon || !opts.icons )
+      html +=  result( m, 'label' );
+
+    var mextra = result( m, 'extra' );
+    if ( mextra )
+      html += mextra;
+
+    if ( opts.submenu )
+      html += '&nbsp;<i class="fa fa-caret-down" style="color:#666;"/>';
+
+    html += '</a>';
+
+    return html;
+  }
+
+  function menuItemRenderer( item, opts ) {
+    var html = '';
+
+    var el = result( item, 'element' );
+    if ( el === undefined )
+      el = 'li';
+
+    if ( el ) html += '<' + el + '>';
+    html += linkRenderer( item, opts );
+    if ( el ) html += '</' + el + '>';
+
+    return html;
+  }
+
+  function menuRenderer( items, opts ) {
+    var html      = '',
+        sepNeeded = false;
+
+    for ( var i=0, ilen=items.length; i<ilen; i++ ) {
+      var item = items[ i ];
+
+      if ( item === '-' ) {
+        sepNeeded = true;
+      } else if ( !result( item, 'hide' ) ) {
+        if ( sepNeeded ) {
+          html += '<li><hr/></li>';
+          sepNeeded = false;
+        }
+
+        html += menuItemRenderer( item, opts );
+      }
+    }
+
+    return html;
+  }
 
   function responsively( opts ) {
 
-    var p         = $( result( opts, 'parent' ) ),
-        rules     = result( opts, 'rules' ),
-        constrain = result( opts, 'constrain' ),
-        cel, // cel = Constrained ELement
-        tHeight   = result( opts, 'height' );
+    var p            = $( result( opts, 'parent' ) ),
+        rules        = result( opts, 'rules' ),
+        constrain    = result( opts, 'constrain' ),
+        tHeight      = result( opts, 'height' ),
+        menuOpts     = result( opts, 'menu' ),
+        menuOverflow = menuOpts && result( menuOpts, 'overflow' ),
+        menuAnchor   = menuOpts && result( menuOpts, 'a' ),
+
+        cel; // cel = Constrained ELement
 
     var outer = result( opts, 'outer' );
     if ( outer )
@@ -35,6 +150,8 @@
     var r = {
       render: function() {
         r.level = 0;
+        r.icons = false;
+        r.menuLimit = ( menuOverflow && result( menuOverflow, 'limit' ) ) || 8; 
 
         cel = constrain ? p.find( constrain ) : p;
         var width = cel.width();
@@ -54,9 +171,15 @@
 
           //console.log( 'processing level ' + r.level + " cel.height:" + cel.height() + " tHeight:" + tHeight );
 
-          if ( r.level && // always process level 0
-               cel.height() <= tHeight )
-            break;
+          if ( !r.level ) {
+            if ( menuOpts ) {
+              // TODO:  rerender menu item until it fits ... THEN render overflow at the end ...
+              $( menuAnchor ).html( r.menu( menuOpts ) );
+            }
+          } else {
+            if ( cel.height() <= tHeight )
+              break;
+          }
 
           var found = false;
 
@@ -102,6 +225,19 @@
               if ( removeClass )
                 a.removeClass( removeClass );
 
+              var menuLimit = result( l, 'menuLimit' );
+              var menuIcons = result( l, 'menuIcons' );
+              if ( menuLimit !== undefined || menuIcons !== undefined ) {
+                if ( menuIcons !== undefined )
+                  r.menuIcons = menuIcons;
+
+                if ( menuLimit !== undefined )
+                  r.menuLimit = menuLimit;
+
+                // TODO:  rerender menu item until it fits ... THEN render overflow at the end ...
+                $( menuAnchor ).html( r.menu( menuOpts ) );
+              }
+
               found = true;
             }
           }
@@ -111,10 +247,63 @@
           if ( !found && tlevel )
             break;
 
-          //console.log( 'cel.height:' + cel.height() + ' target height:' + tHeight + ' found:' + found );
+          //console.log( 'processed ' + r.level + '; cel.height:' + cel.height() + ' target height:' + tHeight + ' found:' + found );
         }
 
         cel.css( 'visibility', 'visible' );
+      },
+
+      menu: function( menuOpts ) {
+        var items = menuOpts.items;
+
+        var overflowOpts = null;
+
+        if ( !menuOpts.submenu && menuOverflow ) {
+
+          var l1 = [];
+          var l2 = [];
+
+          var more = r.menuLimit;
+
+          for ( var i=0, ilen=items.length; i<ilen; i++ ) {
+            var item = items[ i ];
+            if ( item ) {
+              if ( item === '|' ) {
+                more = 0;
+              } else {
+                if ( !result( item, 'hide' ) ) {
+                  if ( more ) {
+                    l1.push( item );
+                    more--;
+                  } else {
+                    l2.push( item );
+                  }
+                }
+              }
+            }
+          }
+
+          items = l1;
+          if ( l2.length )
+            overflowOpts = {
+              items:   l2,
+              submenu: true
+            };
+        }
+
+        var opts = {};
+        opts.icons = !menuOpts.submenu && r.menuIcons;
+
+        var html = menuRenderer( items, opts );
+
+        if ( overflowOpts )
+          html += '<li class="dropdown">' + linkRenderer( menuOverflow, { icons: r.menuIcons, submenu: true } ) + r.submenu( overflowOpts ) + '</li>';
+
+        return html;
+      },
+
+      submenu: function( menuOpts ) {
+        return '<ul class="dropdown-menu">' + menuRenderer( menuOpts.items, {} ) + '</ul>';
       }
     };
 
