@@ -184,8 +184,12 @@
           var found = false;
 
           for ( var li=0; li<rules.length; li++ ) {
-            var l      = rules[ li ],
-                a      = p.find( result( l, 'a' ) ),
+            var l      = rules[ li ];
+
+            if ( !l )
+              continue;
+
+            var a      = p.find( result( l, 'a' ) ),
                 tlevel = result( l, 'level' ) || 0;
 
             if ( l.when !== undefined && !result( l, 'when' ) )
